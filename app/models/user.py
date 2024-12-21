@@ -9,6 +9,8 @@ class CustomUser(Base):
     username = Column(String, unique=True,nullable=False)
     email = Column(String, unique=True, nullable=False)
     is_active = Column(Boolean, default=True)
-    profile_picture = Column(String, nullable=True)  
+    role = Column(String, nullable=False, default='user')
+    profile_picture = Column(String, nullable=True) 
+    hashed_password = Column(String, nullable=False) 
     
     blogs = relationship("Blog", back_populates="author")

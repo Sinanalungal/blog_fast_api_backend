@@ -1,69 +1,78 @@
-# from fastapi import APIRouter
-# from datetime import timedelta
-# from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException, status,responses
+from sqlalchemy.orm import Session
+from app.db.database import get_db
+from app.auth.auth import (
+    verify_password,
+    create_access_token,
+    create_refresh_token,
+    verify_access_token,
+    verify_refresh_token,
+    authenticate_user,
+)
+from app.models.user import CustomUser
+from app.schema.user import UserLogin,UserCreate
 
-# from fastapi import Depends, HTTPException, status
-# from fastapi.security import OAuth2PasswordRequestForm
-# from app.utils.auth import *
+router = APIRouter()
 
-
-# router = APIRouter()
-
-# from fastapi import APIRouter, Depends, HTTPException, status
-# from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-# from sqlalchemy.orm import Session
-
-# from app.db.database import get_db
-# from app.models import CustomUser
-# from app.utils import verify_password, create_access_token  
-
-# router = APIRouter()
-
-# oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
-
-# @router.post("/token", response_model=dict)
-# def login_for_access_token(
-#     form_data: OAuth2PasswordRequestForm = Depends(),
-#     db: Session = Depends(get_db),
+# @router.post("/register")
+# async def register(
+#     form_data: UserCreate,
+#     db: Session = Depends(get_db)
 # ):
-#     user = get_user(db, form_data.username)
-#     if not user or not verify_password(form_data.password, user.hashed_password):
-#         raise HTTPException(
-#             status_code=status.HTTP_401_UNAUTHORIZED,
-#             detail="Invalid username or password",
-#             headers={"WWW-Authenticate": "Bearer"},
+#     if not form_data.username:
+#         return HTTPException(status_code=400,detail="Username is required")
+#     elif not form_data.email:
+#         return HTTPException(status_code=400,detail="Email is required")
+#     elif not form_data.password:
+#         return HTTPException(status_code=400, detail="Password is required")
+#     else:
+#         pass
+    
+#     userdata =  authenticate_user(form_data.username, form_data.password,db)
+#     if userdata:
+#         access_token = create_access_token(
+#             data={"username": userdata.username,"role": userdata.role}
 #         )
-#     access_token = create_access_token(data={"sub": user.username})
-#     return {"access_token": access_token, "token_type": "bearer"}
+#         refresh_token = create_refresh_token(
+#             data={"username": userdata.username,"role": userdata.role}
+#         )
+        
+#         response = responses.JSONResponse({
+#             "access_token": access_token,
+#             "refresh_token": refresh_token,
+#             "token_type": "bearer"
+#         },status_code=status.HTTP_200_OK)
+#         response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True)
+#         response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True)
+#         return response
+#     else:
+#         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+@router.post("/login")
+async def login(
+    form_data: UserLogin,
+    db: Session = Depends(get_db)
+):
+    if not form_data.username or not form_data.password:
+        return HTTPException(status_code=400,detail="Username and password are required")
+    
+    userdata =  authenticate_user(form_data.username, form_data.password,db)
+    if userdata:
+        access_token = create_access_token(
+            data={"username": userdata.username,"role": userdata.role}
+        )
+        refresh_token = create_refresh_token(
+            data={"username": userdata.username,"role": userdata.role}
+        )
+        
+        response = responses.JSONResponse({
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        },status_code=status.HTTP_200_OK)
+        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True)
+        response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True)
+        return response
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
-# # @router.post("/token")
-# # async def login_for_access_token(
-# #     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-# # ) -> Token:
-# #     user = authenticate_user(fake_users_db, form_data.username, form_data.password)
-# #     if not user:
-# #         raise HTTPException(
-# #             status_code=status.HTTP_401_UNAUTHORIZED,
-# #             detail="Incorrect username or password",
-# #             headers={"WWW-Authenticate": "Bearer"},
-# #         )
-# #     access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-# #     access_token = create_access_token(
-# #         data={"sub": user.username}, expires_delta=access_token_expires
-# #     )
-# #     return Token(access_token=access_token, token_type="bearer")
-
-
-# # @router.get("/users/me/", response_model=User)
-# # async def read_users_me(
-# #     current_user: Annotated[User, Depends(get_current_active_user)],
-# # ):
-# #     return current_user
-
-
-# # @router.get("/users/me/items/")
-# # async def read_own_items(
-# #     current_user: Annotated[User, Depends(get_current_active_user)],
-# # ):
-# #     return [{"item_id": "Foo", "owner": current_user.username}]

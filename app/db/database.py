@@ -5,7 +5,7 @@ SQL_DATABASE_URL = "postgresql://postgres:9207400638@localhost:5432/blog_managem
 
 engine =  create_engine(SQL_DATABASE_URL)
 
-sessionLocal = sessionmaker(autocommit=True,autoflush=True,engine=engine)
+sessionLocal = sessionmaker(autoflush=True,bind=engine)
 
 Base = declarative_base()
 
