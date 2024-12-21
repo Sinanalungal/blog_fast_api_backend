@@ -48,6 +48,8 @@ router = APIRouter()
 #     else:
 #         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+
+# Login or Access Route
 @router.post("/login")
 async def login(
     form_data: UserLogin,
@@ -76,3 +78,37 @@ async def login(
     else:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
+
+# Refresh Route (It works like rotate token)
+@router.post("/refresh")
+async def refresh(
+    token: str,
+    db: Session = Depends(get_db)
+):
+    if not token:
+        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST,detail="Refresh token missing..")
+    
+    userdata =  verify_refresh_token(token)
+    if userdata and userdata.get('sub'): 
+        user = db.query(CustomUser).filter(CustomUser.username == userdata.get('username')).first()
+
+        if not user.is_active:
+            return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User is Blocked")
+        
+        access_token = create_access_token(
+            data={"username": user.username,"role": user.role}
+        )
+        refresh_token = create_refresh_token(
+            data={"username": user.username,"role": user.role}
+        )
+        
+        response = responses.JSONResponse({
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        },status_code=status.HTTP_200_OK)
+        response.set_cookie(key="access_token", value=access_token, httponly=True, secure=True)
+        response.set_cookie(key="refresh_token", value=refresh_token, httponly=True, secure=True)
+        return response
+    else:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Refresh token is invalid")

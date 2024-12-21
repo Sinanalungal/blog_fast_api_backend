@@ -27,10 +27,13 @@ def get_password_hash(password: str) -> str:
 
 def authenticate_user(username: str, password: str, db: Session):
     user = db.query(CustomUser).filter(CustomUser.username == username).first()
-    print(user.hashed_password, verify_password(password, user.hashed_password))
+    # print(user.hashed_password, verify_password(password, user.hashed_password))
+    if not user.is_active:
+        return HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User is Blocked")
     if user and verify_password(password, user.hashed_password):
         print(user)
         return user
+    
     raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED ,detail='Unauthenticated User')
 
 
