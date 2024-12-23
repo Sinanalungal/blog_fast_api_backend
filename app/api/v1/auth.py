@@ -72,8 +72,6 @@ async def register(
 
 
 # Login or Access Route
-
-
 @router.post("/login")
 async def login(
     form_data: UserLogin,

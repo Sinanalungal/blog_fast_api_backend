@@ -43,6 +43,8 @@ def save_profile_picture(file: UploadFile) -> str:
     
     return file_path
 
+
+
 @router.get("/user",response_model=UserData, status_code=status.HTTP_200_OK)
 def user_details(requested_user:dict=Depends(validate_and_send_user)):
     # print(requested_user)

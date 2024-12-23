@@ -64,30 +64,35 @@ def create_refresh_token(data: dict):
 
 
 def verify_access_token(access_token: str):
-    try:
-        decoded_token = jwt.decode(
-            access_token,
-            settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM]
-        )
-        print(decoded_token, 'this si the decoded token')
+    if access_token:
+        try:
+            decoded_token = jwt.decode(
+                access_token,
+                settings.SECRET_KEY,
+                algorithms=[settings.ALGORITHM]
+            )
+            print(decoded_token, 'this si the decoded token')
 
-        exp_timestamp = decoded_token.get("exp")
-        print(exp_timestamp, datetime.now(
-            timezone.utc).timestamp(), 'this is two times')
-        print(exp_timestamp < datetime.now(
-            timezone.utc).timestamp(), 'this is boolean')
+            exp_timestamp = decoded_token.get("exp")
+            print(exp_timestamp, datetime.now(
+                timezone.utc).timestamp(), 'this is two times')
+            print(exp_timestamp < datetime.now(
+                timezone.utc).timestamp(), 'this is boolean')
 
-        if exp_timestamp and exp_timestamp < datetime.now(timezone.utc).timestamp():
+            if exp_timestamp and exp_timestamp < datetime.now(timezone.utc).timestamp():
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN , detail="Access token expired")
+
+            
+            print("Access token verified")
+            return decoded_token
+        except JWTError as error:
             raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN, detail="Access token expired")
-
-        
-        print("Access token verified")
-        return decoded_token
-    except JWTError as error:
+                status_code=status.HTTP_403_FORBIDDEN, detail=str(error))
+    else:
         raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, detail=str(error))
+                    status_code=status.HTTP_403_FORBIDDEN , detail="Access token expired")
+
 
 
 def verify_refresh_token(refresh_token: str):
